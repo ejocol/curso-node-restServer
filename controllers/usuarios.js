@@ -1,4 +1,6 @@
 const {response,request, query}  = require('express');
+const bcryptjs = require('bcryptjs');
+const Usuario = require ('../models/usuario');
 
 const usuariosGet = (req = request, res = response) =>{
     const query = req-query;   
@@ -8,12 +10,28 @@ const usuariosGet = (req = request, res = response) =>{
     });
 }
 
-const usuariosPost = (req, res = response) =>{
+const usuariosPost = async (req, res = response) =>{
+    
+    const {nombre, correo, password, rol} = req.body;
+    const usuario = new Usuario({nombre, correo, password, rol});
 
-    const body = req.body;
+    //Verificar si el correo existe
+    const existeEmail = await Usuario.findOne({correo});
+    if (existeEmail) {
+        return res.status(400).json({
+            msg: 'El correo ya existe!!!'
+        });
+        
+    }
+    //Encriptar la contraseña
+    const salt = bcryptjs.genSaltSync();
+    usuario.password = bcryptjs.hashSync(password, salt);
+    //Gurardar el usuario en cafeDB
+    await usuario.save();
+
     res.json({
-        msg: 'post API - Desde el controlador',
-        body
+        //msg: 'post API - Desde el controlador',
+        usuario
     });
 }
 
